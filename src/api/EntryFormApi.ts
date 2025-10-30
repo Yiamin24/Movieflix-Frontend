@@ -1,36 +1,93 @@
 import axios from "axios";
-import { getAuthToken, baseURL } from "./AuthToken";
+import { getAuthHeaders } from "./AuthToken";
 
-const ENTRIES_URL = `${baseURL}/entries`;
+/* -------------------------------------------------------------------------- */
+/* ✅ API Base URL Setup                                                      */
+/* -------------------------------------------------------------------------- */
 
-const getAuthHeaders = () => {
-  const token = getAuthToken();
-  return {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-      "Content-Type": "multipart/form-data",
-    },
-  };
+let API_BASE_URL = "http://localhost:4000/api";
+
+if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) {
+  API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+} else if (typeof process !== "undefined" && process.env?.REACT_APP_API_BASE_URL) {
+  API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+}
+
+const ENTRIES_URL = `${API_BASE_URL}/entries`;
+
+/* -------------------------------------------------------------------------- */
+/* ✅ Create Entry                                                            */
+/* -------------------------------------------------------------------------- */
+
+export const createEntry = async (entryData: Record<string, any>, posterFile?: File | null) => {
+  try {
+    const formData = new FormData();
+    // ✅ Store JSON safely in form-data
+    formData.append("data", JSON.stringify(entryData));
+    if (posterFile) formData.append("poster", posterFile);
+
+    const response = await axios.post(ENTRIES_URL, formData, {
+      headers: {
+        ...getAuthHeaders(true).headers,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Error creating entry:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Failed to create entry." };
+  }
 };
 
-export const createEntry = async (entryData: any, posterFile?: File) => {
-  const formData = new FormData();
-  for (const key in entryData) {
-    formData.append(key, entryData[key]);
-  }
-  if (posterFile) formData.append("poster", posterFile);
+/* -------------------------------------------------------------------------- */
+/* ✅ Update Entry                                                            */
+/* -------------------------------------------------------------------------- */
 
-  const response = await axios.post(ENTRIES_URL, formData, getAuthHeaders());
-  return response.data;
+export const updateEntry = async (
+  id: string | number,
+  entryData: Record<string, any>,
+  posterFile?: File | null
+) => {
+  try {
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(entryData));
+    if (posterFile) formData.append("poster", posterFile);
+
+    const response = await axios.put(`${ENTRIES_URL}/${id}`, formData, {
+      headers: {
+        ...getAuthHeaders(true).headers,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Error updating entry:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Failed to update entry." };
+  }
 };
 
-export const updateEntry = async (id: string, entryData: any, posterFile?: File) => {
-  const formData = new FormData();
-  for (const key in entryData) {
-    formData.append(key, entryData[key]);
-  }
-  if (posterFile) formData.append("poster", posterFile);
+/* -------------------------------------------------------------------------- */
+/* ✅ Optional: Fetch + Delete helpers (Recommended for full CRUD)            */
+/* -------------------------------------------------------------------------- */
 
-  const response = await axios.put(`${ENTRIES_URL}/${id}`, formData, getAuthHeaders());
-  return response.data;
+export const getEntries = async () => {
+  try {
+    const response = await axios.get(ENTRIES_URL, getAuthHeaders());
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Error fetching entries:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Failed to fetch entries." };
+  }
+};
+
+export const deleteEntry = async (id: string | number) => {
+  try {
+    const response = await axios.delete(`${ENTRIES_URL}/${id}`, getAuthHeaders());
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Error deleting entry:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Failed to delete entry." };
+  }
 };

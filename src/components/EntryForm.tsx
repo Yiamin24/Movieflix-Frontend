@@ -23,7 +23,7 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
     location: "",
     durationMin: "",
     year: "",
-    poster: "",
+    posterPath: "",
     details: "",
   });
 
@@ -32,14 +32,11 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  
+  // ✅ Pre-fill form when editing
   useEffect(() => {
     if (entry) {
       const possiblePoster =
-        (entry as any).posterPath ||
-        entry.poster ||
-        (entry as any).posterUrl ||
-        "";
+        (entry as any).posterPath || entry.poster || (entry as any).posterUrl || "";
 
       setFormData({
         title: entry.title || "",
@@ -49,54 +46,45 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
         location: entry.location || "",
         durationMin: (entry as any).durationMin || "",
         year: entry.year?.toString() || "",
-        poster: possiblePoster,
+        posterPath: possiblePoster,
         details: (entry as any).details || "",
       });
 
       if (possiblePoster) {
-        if (possiblePoster.startsWith("http")) {
-          setImagePreview(possiblePoster);
-        } else if (possiblePoster.startsWith("/")) {
-          setImagePreview(`http://localhost:4000${possiblePoster}`);
-        } else {
-          setImagePreview(`http://localhost:4000/${possiblePoster}`);
-        }
-      } else {
-        setImagePreview("");
-      }
+        if (possiblePoster.startsWith("http")) setImagePreview(possiblePoster);
+        else if (possiblePoster.startsWith("/")) setImagePreview(`http://localhost:4000${possiblePoster}`);
+        else setImagePreview(`http://localhost:4000/${possiblePoster}`);
+      } else setImagePreview("");
     }
   }, [entry]);
 
+  // ✅ Handle image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setPosterFile(file);
     setImagePreview(URL.createObjectURL(file));
-    setFormData({ ...formData, poster: "" });
+    setFormData({ ...formData, posterPath: "" });
   };
 
+  // ✅ Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const payload: any = {
+      const payload = {
         title: formData.title.trim(),
         type: formData.type,
         director: formData.director || undefined,
         budget: formData.budget || undefined,
         location: formData.location || undefined,
-        durationMin: formData.durationMin ? formData.durationMin.trim() : undefined,
+        durationMin: formData.durationMin || undefined,
         year: formData.year ? Number(formData.year) : undefined,
         details: formData.details || undefined,
       };
 
-      if (formData.poster) {
-        payload.poster = formData.poster;
-      }
-
-      onSubmit(payload, posterFile);
-    } catch (err: any) {
+      onSubmit(payload as any, posterFile);
+    } catch (err) {
       console.error("❌ Error preparing entry:", err);
     } finally {
       setLoading(false);
@@ -120,7 +108,7 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
               { id: "director", label: "Director", placeholder: "Enter director name" },
               { id: "budget", label: "Budget", placeholder: "e.g., $160M or $3M/episode" },
               { id: "location", label: "Location", placeholder: "Filming location" },
-              { id: "durationMin", label: "Duration (minutes)", placeholder: "e.g., 120" },
+              { id: "durationMin", label: "Duration", placeholder: "e.g., 120 mins" },
               { id: "year", label: "Year", placeholder: "e.g., 2010" },
             ].map((f) => (
               <div key={f.id} className="space-y-2">
@@ -139,9 +127,7 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
               <Label htmlFor="type">Type</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value: "MOVIE" | "TV_SHOW") =>
-                  setFormData({ ...formData, type: value })
-                }
+                onValueChange={(value: "MOVIE" | "TV_SHOW") => setFormData({ ...formData, type: value })}
               >
                 <SelectTrigger className="bg-input-background">
                   <SelectValue />
@@ -154,6 +140,7 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
             </div>
           </div>
 
+          {/* Poster Upload */}
           <div className="space-y-3 border border-border rounded-lg p-4 bg-muted/20">
             <Label>Poster Image</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -173,16 +160,15 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
                   onChange={handleImageUpload}
                   className="hidden"
                 />
-
                 <Label htmlFor="poster-url" className="text-sm text-muted-foreground">
                   Or paste image URL
                 </Label>
                 <Input
                   id="poster-url"
-                  value={formData.poster.startsWith("blob:") ? "" : formData.poster}
+                  value={formData.posterPath}
                   onChange={(e) => {
                     setPosterFile(null);
-                    setFormData({ ...formData, poster: e.target.value });
+                    setFormData({ ...formData, posterPath: e.target.value });
                     setImagePreview(e.target.value);
                   }}
                   placeholder="https://..."
@@ -207,6 +193,7 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
             </div>
           </div>
 
+          {/* Details */}
           <div className="space-y-2">
             <Label htmlFor="details">Details</Label>
             <Textarea
