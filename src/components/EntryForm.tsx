@@ -32,7 +32,7 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ Pre-fill form when editing
+  // ✅ Prefill when editing
   useEffect(() => {
     if (entry) {
       const possiblePoster =
@@ -51,9 +51,12 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
       });
 
       if (possiblePoster) {
-        if (possiblePoster.startsWith("http")) setImagePreview(possiblePoster);
-        else if (possiblePoster.startsWith("/")) setImagePreview(`http://localhost:4000${possiblePoster}`);
-        else setImagePreview(`http://localhost:4000/${possiblePoster}`);
+        if (possiblePoster.startsWith("http"))
+          setImagePreview(possiblePoster);
+        else if (possiblePoster.startsWith("/"))
+          setImagePreview(`http://localhost:4000${possiblePoster}`);
+        else
+          setImagePreview(`http://localhost:4000/${possiblePoster}`);
       } else setImagePreview("");
     }
   }, [entry]);
@@ -67,22 +70,23 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
     setFormData({ ...formData, posterPath: "" });
   };
 
-  // ✅ Submit
+  // ✅ Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const payload = {
         title: formData.title.trim(),
-        type: formData.type,
-        director: formData.director || undefined,
-        budget: formData.budget || undefined,
-        location: formData.location || undefined,
-        durationMin: formData.durationMin || undefined,
+        type: formData.type.toUpperCase() as "MOVIE" | "TV_SHOW",
+        director: formData.director.trim() || undefined,
+        budget: formData.budget.trim() || undefined,
+        location: formData.location.trim() || undefined,
+        durationMin: formData.durationMin.trim() || undefined,
         year: formData.year ? Number(formData.year) : undefined,
-        details: formData.details || undefined,
+        details: formData.details.trim() || undefined,
       };
 
+      console.log("📤 ENTRY DATA SENT:", payload);
       onSubmit(payload as any, posterFile);
     } catch (err) {
       console.error("❌ Error preparing entry:", err);
@@ -106,7 +110,7 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
             {[
               { id: "title", label: "Title", placeholder: "Enter title" },
               { id: "director", label: "Director", placeholder: "Enter director name" },
-              { id: "budget", label: "Budget", placeholder: "e.g., $160M or $3M/episode" },
+              { id: "budget", label: "Budget", placeholder: "e.g., $160M" },
               { id: "location", label: "Location", placeholder: "Filming location" },
               { id: "durationMin", label: "Duration", placeholder: "e.g., 120 mins" },
               { id: "year", label: "Year", placeholder: "e.g., 2010" },
@@ -118,7 +122,6 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
                   value={(formData as any)[f.id]}
                   onChange={(e) => setFormData({ ...formData, [f.id]: e.target.value })}
                   placeholder={f.placeholder}
-                  className="bg-input-background"
                 />
               </div>
             ))}
@@ -129,7 +132,7 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
                 value={formData.type}
                 onValueChange={(value: "MOVIE" | "TV_SHOW") => setFormData({ ...formData, type: value })}
               >
-                <SelectTrigger className="bg-input-background">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -172,7 +175,6 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
                     setImagePreview(e.target.value);
                   }}
                   placeholder="https://..."
-                  className="bg-input-background"
                 />
               </div>
 
@@ -202,7 +204,7 @@ export function EntryForm({ entry, onSubmit, onCancel }: EntryFormProps) {
               onChange={(e) => setFormData({ ...formData, details: e.target.value })}
               placeholder="Brief details about the entry"
               rows={3}
-              className="bg-input-background resize-none"
+              className="resize-none"
             />
           </div>
 

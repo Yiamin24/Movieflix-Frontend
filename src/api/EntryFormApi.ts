@@ -2,9 +2,8 @@ import axios from "axios";
 import { getAuthHeaders } from "./AuthToken";
 
 /* -------------------------------------------------------------------------- */
-/* ✅ API Base URL Setup                                                      */
+/* ✅ API Base URL                                                            */
 /* -------------------------------------------------------------------------- */
-
 let API_BASE_URL = "http://localhost:4000/api";
 
 if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) {
@@ -18,17 +17,16 @@ const ENTRIES_URL = `${API_BASE_URL}/entries`;
 /* -------------------------------------------------------------------------- */
 /* ✅ Create Entry                                                            */
 /* -------------------------------------------------------------------------- */
-
 export const createEntry = async (entryData: Record<string, any>, posterFile?: File | null) => {
   try {
     const formData = new FormData();
-    // ✅ Store JSON safely in form-data
     formData.append("data", JSON.stringify(entryData));
     if (posterFile) formData.append("poster", posterFile);
 
+    const headers = getAuthHeaders(true).headers || {};
     const response = await axios.post(ENTRIES_URL, formData, {
       headers: {
-        ...getAuthHeaders(true).headers,
+        ...headers,
         "Content-Type": "multipart/form-data",
       },
     });
@@ -43,7 +41,6 @@ export const createEntry = async (entryData: Record<string, any>, posterFile?: F
 /* -------------------------------------------------------------------------- */
 /* ✅ Update Entry                                                            */
 /* -------------------------------------------------------------------------- */
-
 export const updateEntry = async (
   id: string | number,
   entryData: Record<string, any>,
@@ -54,9 +51,10 @@ export const updateEntry = async (
     formData.append("data", JSON.stringify(entryData));
     if (posterFile) formData.append("poster", posterFile);
 
+    const headers = getAuthHeaders(true).headers || {};
     const response = await axios.put(`${ENTRIES_URL}/${id}`, formData, {
       headers: {
-        ...getAuthHeaders(true).headers,
+        ...headers,
         "Content-Type": "multipart/form-data",
       },
     });
@@ -69,9 +67,8 @@ export const updateEntry = async (
 };
 
 /* -------------------------------------------------------------------------- */
-/* ✅ Optional: Fetch + Delete helpers (Recommended for full CRUD)            */
+/* ✅ Fetch / Delete Helpers                                                  */
 /* -------------------------------------------------------------------------- */
-
 export const getEntries = async () => {
   try {
     const response = await axios.get(ENTRIES_URL, getAuthHeaders());
