@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Analytics } from "@vercel/analytics/react"
 import { LoginPage } from "./components/LoginPage";
 import { Dashboard } from "./components/Dashboard";
 import { Navbar } from "./components/Navbar";
@@ -73,6 +74,7 @@ export default function App() {
         <Dashboard initialData={mockData} />
       </div>
       <Toaster position="top-right" theme="dark" />
+      <Analytics />
     </div>
   );
 }
