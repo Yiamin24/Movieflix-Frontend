@@ -1,26 +1,23 @@
+// src/api/LoginPageApi.ts
 import { authAxios } from "./AuthToken";
 import { setAuthToken, clearAuthToken } from "./AuthToken";
 
-let BASE_URL = "http://localhost:4000/api"; 
+let BASE_URL = "http://localhost:4000/api";
 
 if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) {
   BASE_URL = import.meta.env.VITE_API_BASE_URL;
-} else if (
-  typeof process !== "undefined" &&
-  process.env?.REACT_APP_API_BASE_URL
-) {
+} else if (typeof process !== "undefined" && process.env?.REACT_APP_API_BASE_URL) {
   BASE_URL = process.env.REACT_APP_API_BASE_URL;
 }
 
 const API_BASE_URL = `${BASE_URL}/auth`;
 
-
+/* -------------------------------------------------------------------------- */
+/* ✅ LOGIN                                                                    */
+/* -------------------------------------------------------------------------- */
 export const loginUser = async (email: string, password: string) => {
   try {
-    const response = await authAxios.post(`${API_BASE_URL}/login`, {
-      email,
-      password,
-    });
+    const response = await authAxios.post(`${API_BASE_URL}/login`, { email, password });
     console.log("✅ Login API success:", response.data);
 
     if (response.data?.token) {
@@ -31,20 +28,14 @@ export const loginUser = async (email: string, password: string) => {
     return response.data;
   } catch (error: any) {
     console.error("❌ Login API error:", error.response?.data || error.message);
-    throw (
-      error.response?.data || {
-        message: "Login failed. Please check your credentials.",
-      }
-    );
+    throw error.response?.data || { message: "Login failed. Please check your credentials." };
   }
 };
 
-
-export const signupUser = async (
-  name: string,
-  email: string,
-  password: string
-) => {
+/* -------------------------------------------------------------------------- */
+/* ✅ SIGNUP                                                                   */
+/* -------------------------------------------------------------------------- */
+export const signupUser = async (name: string, email: string, password: string) => {
   try {
     clearAuthToken();
     localStorage.removeItem("user");
@@ -56,29 +47,23 @@ export const signupUser = async (
     });
     console.log("✅ Signup API success:", response.data);
 
-    alert(
-      "✅ Account created! Please check your email for a verification link before logging in."
-    );
+    alert("✅ Account created! Please check your email for a verification link before logging in.");
     return response.data;
   } catch (error: any) {
     console.error("❌ Signup API error:", error.response?.data || error.message);
-    throw (
-      error.response?.data || {
-        message: "Signup failed. Please try again later.",
-      }
-    );
+    throw error.response?.data || { message: "Signup failed. Please try again later." };
   }
 };
 
-
+/* -------------------------------------------------------------------------- */
+/* ✅ EMAIL VERIFICATION                                                       */
+/* -------------------------------------------------------------------------- */
 export const verifyUser = async (token?: string) => {
   try {
-    const finalToken =
-      token || new URLSearchParams(window.location.search).get("token");
+    const finalToken = token || new URLSearchParams(window.location.search).get("token");
     if (!finalToken) return;
 
     console.log("🪄 Verifying user with token:", finalToken);
-
     const response = await authAxios.get(`${API_BASE_URL}/verify`, {
       params: { token: finalToken },
     });
@@ -87,7 +72,6 @@ export const verifyUser = async (token?: string) => {
       console.log("✅ Verification success:", response.data);
       clearAuthToken();
       localStorage.clear();
-
       alert("🎉 Your email has been verified! Please log in to continue.");
       window.history.replaceState({}, document.title, window.location.pathname);
       window.location.href = "/login";
@@ -100,16 +84,57 @@ export const verifyUser = async (token?: string) => {
     console.error("❌ Verification API error:", error.response?.data || error.message);
     alert("⚠️ Verification failed or token expired.");
     window.history.replaceState({}, document.title, window.location.pathname);
-    throw (
-      error.response?.data || {
-        message: "Verification failed or token expired.",
-      }
-    );
+    throw error.response?.data || { message: "Verification failed or token expired." };
   }
 };
 
-
+// Auto trigger if token present in URL
 (function autoVerify() {
   const token = new URLSearchParams(window.location.search).get("token");
   if (token) verifyUser(token);
 })();
+
+/* -------------------------------------------------------------------------- */
+/* ✅ FORGOT PASSWORD - STEP 1: SEND OTP                                      */
+/* -------------------------------------------------------------------------- */
+export const forgotPassword = async (email: string) => {
+  try {
+    const response = await authAxios.post(`${API_BASE_URL}/forgot-password`, { email });
+    console.log("✅ Forgot Password API success:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Forgot Password API error:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Failed to send OTP. Please try again later." };
+  }
+};
+
+/* -------------------------------------------------------------------------- */
+/* ✅ VERIFY OTP - STEP 2                                                     */
+/* -------------------------------------------------------------------------- */
+export const verifyOtp = async (email: string, otp: string) => {
+  try {
+    const response = await authAxios.post(`${API_BASE_URL}/verify-otp`, { email, otp });
+    console.log("✅ Verify OTP API success:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Verify OTP API error:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Invalid or expired OTP." };
+  }
+};
+
+/* -------------------------------------------------------------------------- */
+/* ✅ RESET PASSWORD - STEP 3                                                 */
+/* -------------------------------------------------------------------------- */
+export const resetPassword = async (email: string, newPassword: string) => {
+  try {
+    const response = await authAxios.post(`${API_BASE_URL}/reset-password`, {
+      email,
+      newPassword,
+    });
+    console.log("✅ Reset Password API success:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Reset Password API error:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Password reset failed. Please try again later." };
+  }
+};
