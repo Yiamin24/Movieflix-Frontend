@@ -137,25 +137,31 @@ export function Dashboard({ initialData }: DashboardProps) {
     return () => observer.disconnect();
   }, [displayedEntries.length, filteredEntries.length]);
 
+  /* ✅ Cloudinary-aware normalization */
   const normalizeEntry = (e: any): MediaEntry => {
     try {
       return withFullPosterURL(e);
     } catch {
       const posterPath = e.poster ?? e.posterPath;
-      const poster =
-        posterPath && typeof posterPath === "string"
-          ? posterPath.startsWith("http")
-            ? posterPath
-            : posterPath.startsWith("/")
-            ? `${API_BASE_URL}${posterPath}`
-            : `${API_BASE_URL}/${posterPath}`
-          : "/placeholder-image.png";
+      let poster = "/placeholder-image.png";
+
+      if (posterPath && typeof posterPath === "string") {
+        if (
+          posterPath.startsWith("http") ||
+          posterPath.includes("res.cloudinary.com")
+        ) {
+          poster = posterPath;
+        } else if (posterPath.startsWith("/")) {
+          poster = `${API_BASE_URL}${posterPath}`;
+        } else {
+          poster = `${API_BASE_URL}/uploads/${posterPath}`;
+        }
+      }
 
       return { ...e, poster } as MediaEntry;
     }
   };
 
-  
   const handleAddEntry = async (
     data: Omit<MediaEntry, "id" | "createdAt">,
     posterFile?: File | null
@@ -180,7 +186,6 @@ export function Dashboard({ initialData }: DashboardProps) {
     }
   };
 
-  
   const handleEditEntry = async (
     data: Omit<MediaEntry, "id" | "createdAt">,
     posterFile?: File | null
@@ -199,9 +204,9 @@ export function Dashboard({ initialData }: DashboardProps) {
         updated = await updateEntryJson(editingEntry.id.toString(), data);
       }
       const normalized = normalizeEntry(updated);
-      setEditingEntry(undefined); 
+      setEditingEntry(undefined);
       toast.success(`"${data.title}" updated successfully!`);
-      await refreshEntries(); 
+      await refreshEntries();
     } catch (error) {
       console.error("Edit entry failed:", error);
       toast.error("Failed to update entry.");
@@ -210,7 +215,6 @@ export function Dashboard({ initialData }: DashboardProps) {
     }
   };
 
-  // ✅ Delete Entry
   const handleDeleteEntry = async () => {
     if (deleteEntry) {
       try {
@@ -291,57 +295,6 @@ export function Dashboard({ initialData }: DashboardProps) {
           </div>
         </div>
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-          <div className="bg-card border border-border rounded-lg p-3">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/20 p-2 rounded-lg">
-                <Film className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total</p>
-                <p className="text-xl">{entries.length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-card border border-border rounded-lg p-3">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/20 p-2 rounded-lg">
-                <Film className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Movies</p>
-                <p className="text-xl">
-                  {
-                    entries.filter((e) =>
-                      ((e.type || "") as string)
-                        .toLowerCase()
-                        .includes("movie")
-                    ).length
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-card border border-border rounded-lg p-3">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/20 p-2 rounded-lg">
-                <Tv className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">TV Shows</p>
-                <p className="text-xl">
-                  {
-                    entries.filter((e) =>
-                      ((e.type || "") as string).toLowerCase().includes("tv")
-                    ).length
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Grid or Table View */}
         {viewMode === "grid" || isMobile ? (
           <div
@@ -364,17 +317,6 @@ export function Dashboard({ initialData }: DashboardProps) {
                     onDelete={setDeleteEntry}
                   />
                 ))
-              )}
-
-              {displayedEntries.length < filteredEntries.length && (
-                <div ref={observerTarget} className="py-4">
-                  {loading && (
-                    <div className="space-y-4">
-                      <Skeleton className="h-40 w-full" />
-                      <Skeleton className="h-40 w-full" />
-                    </div>
-                  )}
-                </div>
               )}
             </div>
           </div>
@@ -422,7 +364,9 @@ export function Dashboard({ initialData }: DashboardProps) {
                         <td className="p-3">
                           <ImageWithFallback
                             src={
-                              entry.poster?.startsWith("http")
+                              entry.poster?.includes("res.cloudinary.com")
+                                ? entry.poster
+                                : entry.poster?.startsWith("http")
                                 ? entry.poster
                                 : `${API_BASE_URL}${entry.poster}`
                             }
@@ -491,19 +435,6 @@ export function Dashboard({ initialData }: DashboardProps) {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
-
-        {displayedEntries.length > 0 && (
-          <div className="mt-3 text-center text-sm text-muted-foreground">
-            {displayedEntries.length >= filteredEntries.length ? (
-              <p>Showing all {filteredEntries.length} entries</p>
-            ) : (
-              <p>
-                Showing {displayedEntries.length} of {filteredEntries.length}{" "}
-                entries
-              </p>
-            )}
           </div>
         )}
       </div>
